@@ -7,6 +7,7 @@ use crate::graph::{Graph, Edge};
 use parser::parse_graph;
 
 use rand::seq::SliceRandom;
+use rand::Rng;
 use rand::thread_rng;
 
 fn main() {
@@ -18,6 +19,9 @@ fn main() {
 
     // Problem 3: Permuting nodes randomly
     run_problem_3(&graph);
+
+    // Problem 4: Run 100 dijkstras
+    run_problem_4(&graph);
 }
 
 fn run_problem_1() -> Graph {
@@ -174,4 +178,25 @@ fn permuting_nodes_randomly(graph: &Graph) -> Graph {
     let incoming = build_csr(new_in_edges);
 
     return Graph::new(n, outgoing, incoming);
+}
+
+fn run_problem_4(graph: &Graph) {
+    println!("Running problem 4: Running 100 dijkstras");
+
+    let start = Instant::now();
+
+    let n = graph.num_nodes;
+    let mut rng = thread_rng();
+
+    for _ in 0..100 {
+        let source = rng.gen_range(0..n);
+        let target = rng.gen_range(0..n);
+
+        graph.dijkstra(source, target);
+    }
+
+    let duration = start.elapsed();
+    let average_dijkstra_duration = duration / 100;
+
+    println!("Problem 4 time: {:?}. Average dijkstra duration: {:?}", duration, average_dijkstra_duration);
 }
