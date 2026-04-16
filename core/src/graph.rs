@@ -2,51 +2,48 @@
 pub struct Graph {
     pub num_nodes: usize,
 
-    // Für ausgehende Kanten
-    pub offsets: Vec<usize>,
-    pub edges: Vec<Edge>,
+    // Graph representation of outgoing edges
+    pub outgoing_offsets: Vec<u64>,
+    pub outgoing_edges: Vec<Edge>,
 
-    // Für eingehende Kanten
-    pub rev_offsets: Vec<usize>,
-    pub rev_edges: Vec<Edge>,
+    // Incoming edges
+    pub incoming_offsets: Vec<u64>,
+    pub incoming_edges: Vec<Edge>,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Edge {
-    pub to: usize,
-    pub weight: u32,
+    pub target: u64,
+    pub weight: u64,
 }
 
 impl Graph {
-    pub fn neighbors(&self, node: usize) -> &[Edge] {
-        let start = self.offsets[node];
-        let end = self.offsets[node + 1];
-        &self.edges[start..end]
+    pub fn new(
+        num_nodes: usize,
+        outgoing: (Vec<Edge>, Vec<u64>),
+        incoming: (Vec<Edge>, Vec<u64>),
+    ) -> Self {
+        let (outgoing_edges, outgoing_offsets) = outgoing;
+        let (incoming_edges, incoming_offsets) = incoming;
+
+        Self {
+            num_nodes,
+            outgoing_offsets,
+            outgoing_edges,
+            incoming_offsets,
+            incoming_edges,
+        }
+    }
+
+    pub fn outgoing(&self, node: usize) -> &[Edge] {
+        let start = self.outgoing_offsets[node] as usize;
+        let end = self.outgoing_offsets[node + 1] as usize;
+        &&self.outgoing_edges[start..end]
     }
 
     pub fn incoming(&self, node: usize) -> &[Edge] {
-        let start = self.rev_offsets[node];
-        let end = self.rev_offsets[node + 1];
-        &self.rev_edges[start..end]
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_neighbors() {
-        let graph = Graph {
-            num_nodes: 2,
-            offsets: vec![0, 1, 1],
-            edges: vec![Edge { to: 1, weight: 5 }],
-            rev_offsets: vec![0, 0, 1],
-            rev_edges: vec![Edge { to: 0, weight: 5 }],
-        };
-
-        let n = graph.neighbors(0);
-        assert_eq!(n[0].to, 1);
-        assert_eq!(n[0].weight, 5);
+        let start = self.incoming_offsets[node] as usize;
+        let end = self.incoming_offsets[node + 1] as usize;
+        &&self.incoming_edges[start..end]
     }
 }

@@ -1,14 +1,16 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
+type OffsetArray = (Vec<Edge>, Vec<u64>);
+
 pub fn read_lines(path: &str) -> Vec<String> {
-    let file = File::open(path).expect("Datei nicht gefunden");
+    let file = File::open(path).expect("File not found");
     let reader = BufReader::new(file);
 
     reader
         .lines()
-        .skip(5)
         .map(|l| l.unwrap())
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
         .collect()
 }
 
@@ -20,60 +22,60 @@ pub fn parse_graph(path: &str) -> Graph {
     let num_nodes: usize = lines[0].parse().unwrap();
     let num_edges: usize = lines[1].parse().unwrap();
 
-    // temporäre Speicherung
-    let mut adj: Vec<Vec<Edge>> = vec![Vec::new(); num_nodes];
-    let mut rev_adj: Vec<Vec<Edge>> = vec![Vec::new(); num_nodes];
+    let mut outgoing_edges: Vec<Vec<Edge>> = vec![Vec::new(); num_nodes];
+    let mut incoming_edges: Vec<Vec<Edge>> = vec![Vec::new(); num_nodes];
 
-    // Nodes überspringen (interessieren uns erstmal nicht)
+    // Skip nodes
     let edge_start = 2 + num_nodes;
 
     for i in 0..num_edges {
         let line = &lines[edge_start + i];
         let parts: Vec<&str> = line.split_whitespace().collect();
 
-        let from: usize = parts[0].parse().unwrap();
-        let to: usize = parts[1].parse().unwrap();
-        let weight: u32 = parts[2].parse().unwrap();
+        let source: u64 = parts[0].parse().unwrap();
+        let target: u64 = parts[1].parse().unwrap();
+        let weight: u64 = parts[2].parse().unwrap();
 
-        adj[from].push(Edge { to, weight });
-        rev_adj[to].push(Edge { to: from, weight });
+        outgoing_edges[source as usize].push(Edge { target, weight });
+        incoming_edges[target as usize].push(Edge { target: source, weight });
     }
 
-    build_graph(num_nodes, adj, rev_adj)
+    build_graph(num_nodes, outgoing_edges, incoming_edges)
+}
+
+fn create_offset_array(adj_list: Vec<Vec<Edge>>) -> OffsetArray {
+
+    let mut edges = Vec::new();
+    let mut offsets = Vec::with_capacity(adj_list.len() + 1) as Vec<u64>;
+
+    offsets.push(0);
+
+    for neighbors in &adj_list {
+        edges.extend(neighbors);
+        offsets.push(edges.len() as u64);
+    }
+
+    (edges, offsets)
+
 }
 
 fn build_graph(
     num_nodes: usize,
-    adj: Vec<Vec<Edge>>,
-    rev_adj: Vec<Vec<Edge>>,
+    outgoing_edges: Vec<Vec<Edge>>,
+    incoming_edges: Vec<Vec<Edge>>,
 ) -> Graph {
-    let mut offsets = Vec::with_capacity(num_nodes + 1);
-    let mut edges = Vec::new();
 
-    offsets.push(0);
+    // Create offset array for the outgoing edges
+    let outgoing = create_offset_array(outgoing_edges);
 
-    for neighbors in &adj {
-        edges.extend(neighbors);
-        offsets.push(edges.len());
-    }
+    // Create offset array for incoming edges
+    let incoming = create_offset_array(incoming_edges);
 
-    let mut rev_offsets = Vec::with_capacity(num_nodes + 1);
-    let mut rev_edges = Vec::new();
-
-    rev_offsets.push(0);
-
-    for neighbors in &rev_adj {
-        rev_edges.extend(neighbors);
-        rev_offsets.push(rev_edges.len());
-    }
-
-    Graph {
+    Graph::new(
         num_nodes,
-        offsets,
-        edges,
-        rev_offsets,
-        rev_edges,
-    }
+        outgoing,
+        incoming
+    )
 }
 
 #[cfg(test)]
@@ -85,7 +87,7 @@ mod tests {
         let g = parse_graph("/Users/nicostrohbach/AlgoEng/graphs/MV.fmi");
 
         assert_eq!(g.num_nodes, 644199);
-        assert_eq!(g.neighbors(0)[0].to, 434859);
+        assert_eq!(g.outgoing(0)[0].target, 434859);
     }
 
     #[test]
@@ -93,6 +95,6 @@ mod tests {
         let g = parse_graph("/Users/nicostrohbach/AlgoEng/graphs/germany.fmi");
 
         assert_eq!(g.num_nodes, 25115477);
-        assert_eq!(g.neighbors(0)[0].to, 1488520);
+        assert_eq!(g.outgoing(0)[0].target, 1488520);
     }
 }
