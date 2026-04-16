@@ -19,10 +19,10 @@ pub fn run_problems() {
     run_problem_2(&graph);
 
     // Problem 3: Permuting nodes randomly
-    //run_problem_3(&graph);
+    run_problem_3(&graph);
 
     // Problem 4: Run 100 dijkstras
-    //run_problem_4(&graph);
+    run_problem_4(&graph);
 
     // Problem 5: Read input file and generate output
     run_problem_5(&graph);
@@ -44,7 +44,7 @@ fn run_problem_1() -> Graph {
 
 fn read_germany_graph() -> Graph {
 
-    let path = "core/data/graphs/germany.fmi";
+    let path = "graph.fmi";
     let graph = parse_graph(path);
     return graph;
 
@@ -239,7 +239,7 @@ fn write_output_file(path: &str, lines: &[String]) {
 fn run_problem_5(graph: &Graph) {
     println!("Running problem 5: Run dijkstras on given nodes from input file and generate output");
 
-    let source_target_pairs = read_input_file("core/data/input_problem5.txt");
+    let source_target_pairs = read_input_file("queries.txt");
     let mut output_lines: Vec<String> = Vec::new();
 
     for (source, target) in source_target_pairs {
@@ -255,6 +255,6 @@ fn run_problem_5(graph: &Graph) {
 
     }
 
-    write_output_file("core/data/output_problem5.txt", &output_lines);
+    write_output_file("result.txt", &output_lines);
 
 }
