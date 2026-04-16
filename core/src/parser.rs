@@ -77,24 +77,3 @@ fn build_graph(
         incoming
     )
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_mv() {
-        let g = parse_graph("/Users/nicostrohbach/AlgoEng/graphs/MV.fmi");
-
-        assert_eq!(g.num_nodes, 644199);
-        assert_eq!(g.outgoing(0)[0].target, 434859);
-    }
-
-    #[test]
-    fn test_parse_germany() {
-        let g = parse_graph("/Users/nicostrohbach/AlgoEng/graphs/germany.fmi");
-
-        assert_eq!(g.num_nodes, 25115477);
-        assert_eq!(g.outgoing(0)[0].target, 1488520);
-    }
-}
