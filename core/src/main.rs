@@ -96,6 +96,9 @@ fn dfs(graph: &Graph, start: usize, visited: &mut [bool]) {
     }
 }
 
+// Runtime with normal permutation: 4.6s
+// Runtime with random permutation: 13.9s
+// Conclusion: It is much slower with random permutation.
 fn run_problem_3(graph: &Graph) {
     println!("Running problem 3: Permuting nodes randomly");
 
