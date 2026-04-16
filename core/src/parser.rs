@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-type OffsetArray = (Vec<Edge>, Vec<u64>);
+type OffsetArray = (Vec<Edge>, Vec<usize>);
 
 pub fn read_lines(path: &str) -> Vec<String> {
     let file = File::open(path).expect("File not found");
@@ -32,12 +32,12 @@ pub fn parse_graph(path: &str) -> Graph {
         let line = &lines[edge_start + i];
         let parts: Vec<&str> = line.split_whitespace().collect();
 
-        let source: u64 = parts[0].parse().unwrap();
-        let target: u64 = parts[1].parse().unwrap();
-        let weight: u64 = parts[2].parse().unwrap();
+        let source: usize = parts[0].parse().unwrap();
+        let target: usize = parts[1].parse().unwrap();
+        let weight: usize = parts[2].parse().unwrap();
 
-        outgoing_edges[source as usize].push(Edge { target, weight });
-        incoming_edges[target as usize].push(Edge { target: source, weight });
+        outgoing_edges[source].push(Edge { target, weight });
+        incoming_edges[target].push(Edge { target: source, weight });
     }
 
     build_graph(num_nodes, outgoing_edges, incoming_edges)
@@ -46,13 +46,13 @@ pub fn parse_graph(path: &str) -> Graph {
 fn create_offset_array(adj_list: Vec<Vec<Edge>>) -> OffsetArray {
 
     let mut edges = Vec::new();
-    let mut offsets = Vec::with_capacity(adj_list.len() + 1) as Vec<u64>;
+    let mut offsets = Vec::with_capacity(adj_list.len() + 1);
 
     offsets.push(0);
 
     for neighbors in &adj_list {
         edges.extend(neighbors);
-        offsets.push(edges.len() as u64);
+        offsets.push(edges.len());
     }
 
     (edges, offsets)
