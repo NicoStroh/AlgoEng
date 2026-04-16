@@ -7,6 +7,10 @@ use rand::seq::SliceRandom;
 use rand::Rng;
 use rand::thread_rng;
 
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::io::Write;
+
 pub fn run_problems() {
     // Problem 1: Read germany graph file
     let graph = run_problem_1();
@@ -15,10 +19,13 @@ pub fn run_problems() {
     run_problem_2(&graph);
 
     // Problem 3: Permuting nodes randomly
-    run_problem_3(&graph);
+    //run_problem_3(&graph);
 
     // Problem 4: Run 100 dijkstras
-    run_problem_4(&graph);
+    //run_problem_4(&graph);
+
+    // Problem 5: Read input file and generate output
+    run_problem_5(&graph);
 }
 
 fn run_problem_1() -> Graph {
@@ -37,7 +44,7 @@ fn run_problem_1() -> Graph {
 
 fn read_germany_graph() -> Graph {
 
-    let path = "/Users/nicostrohbach/AlgoEng/graphs/germany.fmi";
+    let path = "core/data/graphs/germany.fmi";
     let graph = parse_graph(path);
     return graph;
 
@@ -196,4 +203,58 @@ fn run_problem_4(graph: &Graph) {
     let average_dijkstra_duration = duration / 100;
 
     println!("Problem 4 time: {:?}. Average dijkstra duration: {:?}", duration, average_dijkstra_duration);
+}
+
+fn read_input_file(path: &str) -> Vec<(usize, usize)> {
+    let file = File::open(path).expect("Cannot open input file");
+    let reader = BufReader::new(file);
+
+    let mut pairs = Vec::new();
+
+    for line in reader.lines() {
+        let line = line.expect("Error reading line");
+
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() != 2 {
+            continue;
+        }
+
+        let source = parts[0].parse::<usize>().unwrap();
+        let target = parts[1].parse::<usize>().unwrap();
+
+        pairs.push((source, target));
+    }
+
+    pairs
+}
+
+fn write_output_file(path: &str, lines: &[String]) {
+    let mut file = File::create(path).expect("Cannot create output file");
+
+    for line in lines {
+        writeln!(file, "{}", line).expect("Write failed");
+    }
+}
+
+fn run_problem_5(graph: &Graph) {
+    println!("Running problem 5: Run dijkstras on given nodes from input file and generate output");
+
+    let source_target_pairs = read_input_file("core/data/input_problem5.txt");
+    let mut output_lines: Vec<String> = Vec::new();
+
+    for (source, target) in source_target_pairs {
+
+        let start = Instant::now();
+
+        let dist = graph.dijkstra_distance(source, target);
+
+        let duration = start.elapsed().as_secs_f32();
+
+        let line = format!("{} {} {} {}", source, target, dist, duration);
+        output_lines.push(line);
+
+    }
+
+    write_output_file("core/data/output_problem5.txt", &output_lines);
+
 }
