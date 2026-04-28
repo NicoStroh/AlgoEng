@@ -22,6 +22,16 @@ pub fn parse_graph(path: &str) -> Graph {
     let num_nodes: usize = lines[0].parse().unwrap();
     let num_edges: usize = lines[1].parse().unwrap();
 
+    for i in 0..num_nodes {
+        // add 2 because of first 2 lines indicating number of nodes and edges
+        let line = &lines[i + 2];
+
+        let parts: Vec<&str> = line.split_whitespace().collect();
+
+        let id: u64 = parts[0].parse().unwrap();
+        let level: u64 = parts[5].parse().unwrap();
+    }
+
     let mut outgoing_edges: Vec<Vec<Edge>> = vec![Vec::new(); num_nodes];
     let mut incoming_edges: Vec<Vec<Edge>> = vec![Vec::new(); num_nodes];
 
@@ -35,6 +45,9 @@ pub fn parse_graph(path: &str) -> Graph {
         let source: usize = parts[0].parse().unwrap();
         let target: usize = parts[1].parse().unwrap();
         let weight: usize = parts[2].parse().unwrap();
+
+        let edge_id_a: u64 = parts[5].parse().unwrap();
+        let edge_id_b: u64 = parts[6].parse().unwrap();
 
         outgoing_edges[source].push(Edge { target, weight });
         incoming_edges[target].push(Edge { target: source, weight });
