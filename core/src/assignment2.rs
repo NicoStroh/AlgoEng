@@ -3,6 +3,9 @@ use std::time::Instant;
 use crate::graph::{Graph};
 use crate::parser::parse_graph;
 
+use rand::Rng;
+use rand::thread_rng;
+
 pub fn run_problems() {
     // Problem 1: Read precomputed CH graph and run CH queries
     run_problem_1();
@@ -40,9 +43,13 @@ fn read_precomputed_stuttgart_graph() -> Graph {
 fn run_ch_query(graph: &Graph) {
     println!("Running CH query on stuttgart graph");
 
-    let source = 10usize;
-    let target = 1000usize;
+    // Generate random source and target nodes
+    let mut rng = thread_rng();
+    let n = graph.num_nodes;
+    let source = rng.gen_range(0..n);
+    let target = rng.gen_range(0..n);
 
+    // Execute CH and print runtime
     let start_ch = Instant::now();
 
     let distance_ch = graph.ch_query(source, target);
@@ -51,7 +58,7 @@ fn run_ch_query(graph: &Graph) {
 
     println!("CH runtime: {:?}", duration_ch);
 
-
+    // Execute dijkstra and print runtime
     let start_dijkstra = Instant::now();
 
     let distance_dijsktra = graph.dijkstra_distance(source, target);
