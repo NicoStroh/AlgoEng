@@ -7,47 +7,67 @@ pub struct Graph {
     pub num_nodes: usize,
 
     // Graph representation of outgoing edges
-    pub outgoing_offsets: Vec<usize>,
+    pub outgoing_nodes: Vec<Node>,
     pub outgoing_edges: Vec<Edge>,
 
     // Incoming edges
-    pub incoming_offsets: Vec<usize>,
+    pub incoming_nodes: Vec<Node>,
     pub incoming_edges: Vec<Edge>,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Edge {
-    pub target: usize,
-    pub weight: usize,
+    pub target: u64,
+    pub weight: u64,
+    edge_id_a: Option<u64>,
+    edge_id_b: Option<u64>
 }
+
+impl Edge {
+    pub fn new(target: u64, weight: u64, edge_id_a: Option<u64>, edge_id_b: Option<u64>) -> Self {
+        Edge {target, weight, edge_id_a, edge_id_b}
+    }
+}
+
+#[derive(Debug, Clone)]
+ pub struct Node {
+    offset: u64,
+    level: u64
+ }
+
+ impl Node {
+    pub fn new(offset: u64, level: u64) -> Self {
+        Node {offset, level}
+    }
+ }
 
 impl Graph {
     pub fn new(
         num_nodes: usize,
-        outgoing: (Vec<Edge>, Vec<usize>),
-        incoming: (Vec<Edge>, Vec<usize>),
+        outgoing: (Vec<Edge>, Vec<Node>),
+        incoming: (Vec<Edge>, Vec<Node>),
     ) -> Self {
-        let (outgoing_edges, outgoing_offsets) = outgoing;
-        let (incoming_edges, incoming_offsets) = incoming;
+        let (outgoing_edges, outgoing_nodes) = outgoing;
+        let (incoming_edges, incoming_nodes) = incoming;
 
         Self {
             num_nodes,
-            outgoing_offsets,
+            outgoing_nodes,
             outgoing_edges,
-            incoming_offsets,
+            incoming_nodes,
             incoming_edges,
         }
     }
 
     pub fn outgoing(&self, node: usize) -> &[Edge] {
-        let start = self.outgoing_offsets[node];
-        let end = self.outgoing_offsets[node + 1];
+        let start = self.outgoing_nodes[node].offset as usize;
+        let end = self.outgoing_nodes[node + 1].offset as usize;
         &&self.outgoing_edges[start..end]
     }
 
     pub fn incoming(&self, node: usize) -> &[Edge] {
-        let start = self.incoming_offsets[node];
-        let end = self.incoming_offsets[node + 1];
+        let start = self.incoming_nodes[node].offset as usize;
+        let end = self.incoming_nodes[node + 1].offset as usize;
         &&self.incoming_edges[start..end]
     }
 
@@ -73,8 +93,8 @@ impl Graph {
             }
 
             for edge in self.outgoing(u) {
-                let v = edge.target;
-                let w = edge.weight;
+                let v = edge.target as usize;
+                let w = edge.weight as usize;
 
                 let new_dist = d + w;
 
@@ -111,8 +131,8 @@ impl Graph {
             }
 
             for edge in self.outgoing(u) {
-                let v = edge.target;
-                let w = edge.weight;
+                let v = edge.target as usize;
+                let w = edge.weight as usize;
 
                 let new_dist = d + w;
 

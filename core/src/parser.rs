@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-type OffsetArray = (Vec<Edge>, Vec<usize>);
+type OffsetArray = (Vec<Edge>, Vec<Node>);
 
 pub fn read_lines(path: &str) -> Vec<String> {
     let file = File::open(path).expect("File not found");
@@ -14,7 +14,7 @@ pub fn read_lines(path: &str) -> Vec<String> {
         .collect()
 }
 
-use crate::graph::{Graph, Edge};
+use crate::graph::{Graph, Edge, Node};
 
 pub fn parse_graph(path: &str) -> Graph {
     let lines = read_lines(path);
@@ -22,6 +22,7 @@ pub fn parse_graph(path: &str) -> Graph {
     let num_nodes: usize = lines[0].parse().unwrap();
     let num_edges: usize = lines[1].parse().unwrap();
 
+    let mut levels: Vec<u64> = vec![];
     for i in 0..num_nodes {
         // add 2 because of first 2 lines indicating number of nodes and edges
         let line = &lines[i + 2];
@@ -30,6 +31,7 @@ pub fn parse_graph(path: &str) -> Graph {
 
         let id: u64 = parts[0].parse().unwrap();
         let level: u64 = parts[5].parse().unwrap();
+        levels.push(level);
     }
 
     let mut outgoing_edges: Vec<Vec<Edge>> = vec![Vec::new(); num_nodes];
@@ -42,51 +44,40 @@ pub fn parse_graph(path: &str) -> Graph {
         let line = &lines[edge_start + i];
         let parts: Vec<&str> = line.split_whitespace().collect();
 
-        let source: usize = parts[0].parse().unwrap();
-        let target: usize = parts[1].parse().unwrap();
-        let weight: usize = parts[2].parse().unwrap();
+        let source: u64 = parts[0].parse().unwrap();
+        let target: u64 = parts[1].parse().unwrap();
+        let weight: u64 = parts[2].parse().unwrap();
 
-        let edge_id_a: u64 = parts[5].parse().unwrap();
-        let edge_id_b: u64 = parts[6].parse().unwrap();
+        let edge_id_a: Option<u64> = parts[5].parse().ok();
+        let edge_id_b: Option<u64> = parts[6].parse().ok();
 
-        outgoing_edges[source].push(Edge { target, weight });
-        incoming_edges[target].push(Edge { target: source, weight });
+        outgoing_edges[source as usize].push(Edge::new(target, weight, edge_id_a, edge_id_b));
+        incoming_edges[target as usize].push(Edge::new(source, weight, edge_id_b, edge_id_a));
     }
 
-    build_graph(num_nodes, outgoing_edges, incoming_edges)
-}
-
-fn create_offset_array(adj_list: Vec<Vec<Edge>>) -> OffsetArray {
-
-    let mut edges = Vec::new();
-    let mut offsets = Vec::with_capacity(adj_list.len() + 1);
-
-    offsets.push(0);
-
-    for neighbors in &adj_list {
-        edges.extend(neighbors);
-        offsets.push(edges.len());
-    }
-
-    (edges, offsets)
-
-}
-
-fn build_graph(
-    num_nodes: usize,
-    outgoing_edges: Vec<Vec<Edge>>,
-    incoming_edges: Vec<Vec<Edge>>,
-) -> Graph {
-
-    // Create offset array for the outgoing edges
-    let outgoing = create_offset_array(outgoing_edges);
-
-    // Create offset array for incoming edges
-    let incoming = create_offset_array(incoming_edges);
+    let outgoing = create_offset_array(outgoing_edges, &levels);
+    let incoming = create_offset_array(incoming_edges, &levels);
 
     Graph::new(
         num_nodes,
         outgoing,
         incoming
     )
+
+}
+
+fn create_offset_array(adj_list: Vec<Vec<Edge>>, levels: &Vec<u64>) -> OffsetArray {
+
+    let mut flat_edges = Vec::new();
+    let mut nodes: Vec<Node> = Vec::with_capacity(adj_list.len() + 1);
+    let mut current_offset = 0u64;
+
+    for (i, edges) in adj_list.iter().enumerate() {
+        current_offset += edges.len() as u64;        
+        flat_edges.extend(edges.clone());
+        nodes.push(Node::new(current_offset, levels[i]));
+    }
+
+    (flat_edges, nodes)
+
 }
