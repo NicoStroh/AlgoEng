@@ -108,59 +108,96 @@ impl Graph {
 
         return dist[target];
     }
-    
-    // Full dijkstra algorithm from source to target, returns the complete path
-    pub fn dijkstra_path(&self, source: usize, target: usize,) -> Option<(usize, Vec<usize>)> {
+
+    pub fn ch_query(&self, source: usize, target: usize) -> Option<usize> {
         let n = self.num_nodes;
 
-        let mut dist = vec![usize::MAX; n];
-        let mut prev = vec![None; n];
+        // Distances for forwards and backwards search
+        let mut dist_f = vec![usize::MAX; n];
+        let mut dist_b = vec![usize::MAX; n];
 
-        let mut heap = BinaryHeap::new();
+        let mut visited_f = vec![false; n];
+        let mut visited_b = vec![false; n];
 
-        dist[source] = 0;
-        heap.push((Reverse(0), source));
+        let mut heap_f = BinaryHeap::new();
+        let mut heap_b = BinaryHeap::new();
 
-        while let Some((Reverse(d), u)) = heap.pop() {
-            if u == target {
-                break;
+        dist_f[source] = 0;
+        dist_b[target] = 0;
+
+        heap_f.push((Reverse(0), source));
+        heap_b.push((Reverse(0), target));
+
+        let mut best = usize::MAX;
+
+        while !heap_f.is_empty() || !heap_b.is_empty() {
+
+            // ---- Forward search ----
+            if let Some((Reverse(d), u)) = heap_f.pop() {
+                if d > dist_f[u] { continue; }
+                if d > best { break; }
+
+                visited_f[u] = true;
+
+                if visited_b[u] {
+                    best = best.min(dist_f[u] + dist_b[u]);
+                }
+
+                let level_u = self.outgoing_nodes[u].level;
+
+                for edge in self.outgoing(u) {
+                    let v = edge.target as usize;
+
+                    // CH constraint: only go UP
+                    if self.outgoing_nodes[v].level <= level_u {
+                        continue;
+                    }
+
+                    let new_dist = d + edge.weight as usize;
+
+                    if new_dist < dist_f[v] {
+                        dist_f[v] = new_dist;
+                        heap_f.push((Reverse(new_dist), v));
+                    }
+                }
             }
 
-            if d > dist[u] {
-                continue;
-            }
+            // ---- Backward search ----
+            if let Some((Reverse(d), u)) = heap_b.pop() {
+                if d > dist_b[u] { continue; }
+                if d > best { break; }
 
-            for edge in self.outgoing(u) {
-                let v = edge.target as usize;
-                let w = edge.weight as usize;
+                visited_b[u] = true;
 
-                let new_dist = d + w;
+                if visited_f[u] {
+                    best = best.min(dist_f[u] + dist_b[u]);
+                }
 
-                if new_dist < dist[v] {
-                    dist[v] = new_dist;
-                    prev[v] = Some(u);
-                    heap.push((Reverse(new_dist), v));
+                let level_u = self.incoming_nodes[u].level;
+
+                for edge in self.incoming(u) {
+                    let v = edge.target as usize;
+
+                    // CH constraint: only go UP
+                    if self.incoming_nodes[v].level <= level_u {
+                        continue;
+                    }
+
+                    let new_dist = d + edge.weight as usize;
+
+                    if new_dist < dist_b[v] {
+                        dist_b[v] = new_dist;
+                        heap_b.push((Reverse(new_dist), v));
+                    }
                 }
             }
         }
 
-        if dist[target] == usize::MAX {
-            return None;
+        if best == usize::MAX {
+            None
+        } else {
+            Some(best)
         }
-
-        // Reconstruct path
-        let mut path = Vec::new();
-        let mut cur = target;
-
-        while let Some(p) = prev[cur] {
-            path.push(cur);
-            cur = p;
-        }
-
-        path.push(source);
-        path.reverse();
-
-        Some((dist[target], path))
     }
 
 }

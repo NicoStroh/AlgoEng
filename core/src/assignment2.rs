@@ -25,7 +25,7 @@ fn run_problem_1() -> Graph {
     
     let start = Instant::now();
 
-    let graph = read_stuttgart_graph();
+    let graph = read_precomputed_stuttgart_graph();
 
     let duration = start.elapsed();
 
@@ -34,9 +34,9 @@ fn run_problem_1() -> Graph {
     return graph;
 }
 
-fn read_stuttgart_graph() -> Graph {
+fn read_precomputed_stuttgart_graph() -> Graph {
 
-    let path = "stgtregbz.fmi";
+    let path = "stgtregbz_ch.fmi";
     let graph = parse_graph(path);
     return graph;
 
