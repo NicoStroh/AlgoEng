@@ -201,4 +201,143 @@ impl Graph {
         }
     }
 
+    pub fn ch_query_with_sod(&self, source: usize, target: usize) -> Option<usize> {
+        let n = self.num_nodes;
+
+        // Distances for forwards and backwards search
+        let mut dist_f = vec![usize::MAX; n];
+        let mut dist_b = vec![usize::MAX; n];
+
+        let mut visited_f = vec![false; n];
+        let mut visited_b = vec![false; n];
+
+        let mut heap_f = BinaryHeap::new();
+        let mut heap_b = BinaryHeap::new();
+
+        dist_f[source] = 0;
+        dist_b[target] = 0;
+
+        heap_f.push((Reverse(0), source));
+        heap_b.push((Reverse(0), target));
+
+        let mut best = usize::MAX;
+
+        while !heap_f.is_empty() || !heap_b.is_empty() {
+
+            // =========================
+            // FORWARD SEARCH
+            // =========================
+            if let Some((Reverse(d), u)) = heap_f.pop() {
+                if d > dist_f[u] || d > best {
+                    continue;
+                }
+
+                // ---- Stall-on-Demand ----
+                let mut stalled = false;
+                for edge in self.incoming(u) {
+                    let v = edge.target as usize;
+                    let w = edge.weight as usize;
+
+                    if self.levels[v] <= self.levels[u] {
+                        continue;
+                    }
+
+                    if let Some(vd) = dist_f[v].checked_add(w) {
+                    if vd < dist_f[u] {
+                        stalled = true;
+                        break;
+                    }
+                }
+                }
+                if stalled {
+                    continue;
+                }
+
+                visited_f[u] = true;
+
+                if visited_b[u] {
+                    best = best.min(dist_f[u] + dist_b[u]);
+                }
+
+                let level_u = self.levels[u];
+
+                for edge in self.outgoing(u) {
+                    let v = edge.target as usize;
+
+                    // CH constraint: only upward edges
+                    if self.levels[v] <= level_u {
+                        continue;
+                    }
+
+                    let new_dist = d + edge.weight as usize;
+
+                    if new_dist < dist_f[v] {
+                        dist_f[v] = new_dist;
+                        heap_f.push((Reverse(new_dist), v));
+                    }
+                }
+            }
+
+            // =========================
+            // BACKWARD SEARCH
+            // =========================
+            if let Some((Reverse(d), u)) = heap_b.pop() {
+                if d > dist_b[u] || d > best {
+                    continue;
+                }
+
+                // ---- Stall-on-Demand ----
+                let mut stalled = false;
+                for edge in self.outgoing(u) {
+                    let v = edge.target as usize;
+                    let w = edge.weight as usize;
+
+                    if self.levels[v] <= self.levels[u] {
+                        continue;
+                    }
+
+                    if let Some(vd) = dist_b[v].checked_add(w) {
+                    if vd < dist_b[u] {
+                        stalled = true;
+                        break;
+                    }
+                }
+                }
+                if stalled {
+                    continue;
+                }
+
+                visited_b[u] = true;
+
+                if visited_f[u] {
+                    best = best.min(dist_f[u] + dist_b[u]);
+                }
+
+                let level_u = self.levels[u];
+
+                for edge in self.incoming(u) {
+                    let v = edge.target as usize;
+
+                    // CH constraint: only upward edges
+                    if self.levels[v] <= level_u {
+                        continue;
+                    }
+
+                    let new_dist = d + edge.weight as usize;
+
+                    if new_dist < dist_b[v] {
+                        dist_b[v] = new_dist;
+                        heap_b.push((Reverse(new_dist), v));
+                    }
+                }
+            }
+        }
+
+        if best == usize::MAX {
+            None
+        } else {
+            Some(best)
+        }
+    }
+
 }
