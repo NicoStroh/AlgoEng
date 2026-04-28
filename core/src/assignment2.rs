@@ -31,7 +31,7 @@ fn read_precomputed_stuttgart_graph() -> Graph {
 
     let duration = start.elapsed();
 
-    println!("Reading precomputed Stuttgart graph took {:?} seconds", duration);
+    println!("Reading precomputed Stuttgart graph took {:?}", duration);
 
     return graph;
 
@@ -43,22 +43,24 @@ fn run_ch_query(graph: &Graph) {
     let source = 10usize;
     let target = 1000usize;
 
-    let start = Instant::now();
+    let start_ch = Instant::now();
 
-    graph.ch_query(source, target);
+    let distance_ch = graph.ch_query(source, target);
 
-    let duration = start.elapsed();
+    let duration_ch = start_ch.elapsed();
 
-    println!("CH runtime: {:?}", duration);
+    println!("CH runtime: {:?}", duration_ch);
 
 
-    let start = Instant::now();
+    let start_dijkstra = Instant::now();
 
-    graph.dijkstra_distance(source, target);
+    let distance_dijsktra = graph.dijkstra_distance(source, target);
 
-    let duration = start.elapsed();
+    let duration_dijkstra = start_dijkstra.elapsed();
 
-    println!("Dijkstra runtime: {:?}", duration);
+    println!("Dijkstra runtime: {:?}", duration_dijkstra);
+
+    assert_eq!(distance_ch.unwrap(), distance_dijsktra);
 }
 
 fn run_problem_2() {

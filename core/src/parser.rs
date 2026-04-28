@@ -70,12 +70,22 @@ fn create_offset_array(adj_list: Vec<Vec<Edge>>, levels: &Vec<u64>) -> OffsetArr
 
     let mut flat_edges = Vec::new();
     let mut nodes: Vec<Node> = Vec::with_capacity(adj_list.len() + 1);
+
     let mut current_offset = 0u64;
+
+    nodes.push(Node::new(0, levels[0]));
 
     for (i, edges) in adj_list.iter().enumerate() {
         current_offset += edges.len() as u64;        
         flat_edges.extend(edges.clone());
-        nodes.push(Node::new(current_offset, levels[i]));
+
+        let level = if i + 1 < levels.len() {
+            levels[i + 1]
+        } else {
+            levels[i] // letzter kann irgendwas sein
+        };
+
+        nodes.push(Node::new(current_offset, level));
     }
 
     (flat_edges, nodes)
