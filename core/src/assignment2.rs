@@ -1,15 +1,7 @@
 use std::time::Instant;
 
-use crate::graph::{Graph, Edge};
+use crate::graph::{Graph};
 use crate::parser::parse_graph;
-
-use rand::seq::SliceRandom;
-use rand::Rng;
-use rand::thread_rng;
-
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::io::Write;
 
 pub fn run_problems() {
     // Problem 1: Read precomputed CH graph and run CH queries
@@ -23,23 +15,50 @@ pub fn run_problems() {
 fn run_problem_1() -> Graph {
     println!("Running problem 1: Reading precomputed Stuttgart graph file and run CH");
     
-    let start = Instant::now();
 
     let graph = read_precomputed_stuttgart_graph();
-
-    let duration = start.elapsed();
-
-    println!("Problem 1 done in {:?}", duration);
+    run_ch_query(&graph);
 
     return graph;
 }
 
 fn read_precomputed_stuttgart_graph() -> Graph {
 
-    let path = "stgtregbz_ch.fmi";
+    let start = Instant::now();
+
+    let path = "core/data/graphs/stgtregbz_ch.fmi";
     let graph = parse_graph(path);
+
+    let duration = start.elapsed();
+
+    println!("Reading precomputed Stuttgart graph took {:?} seconds", duration);
+
     return graph;
 
+}
+
+fn run_ch_query(graph: &Graph) {
+    println!("Running CH query on stuttgart graph");
+
+    let source = 10usize;
+    let target = 1000usize;
+
+    let start = Instant::now();
+
+    graph.ch_query(source, target);
+
+    let duration = start.elapsed();
+
+    println!("CH runtime: {:?}", duration);
+
+
+    let start = Instant::now();
+
+    graph.dijkstra_distance(source, target);
+
+    let duration = start.elapsed();
+
+    println!("Dijkstra runtime: {:?}", duration);
 }
 
 fn run_problem_2() {

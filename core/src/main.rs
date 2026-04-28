@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 mod parser;
 mod graph;
 mod assignment2;

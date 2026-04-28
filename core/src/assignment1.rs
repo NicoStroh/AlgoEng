@@ -1,3 +1,4 @@
+/*
 use std::time::Instant;
 
 use crate::graph::{Graph, Edge};
@@ -258,3 +259,4 @@ fn run_problem_5(graph: &Graph) {
     write_output_file("result.txt", &output_lines);
 
 }
+    */
