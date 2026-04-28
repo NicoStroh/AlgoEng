@@ -60,6 +60,7 @@ pub fn parse_graph(path: &str) -> Graph {
 
     Graph::new(
         num_nodes,
+        levels,
         outgoing,
         incoming
     )
@@ -73,19 +74,12 @@ fn create_offset_array(adj_list: Vec<Vec<Edge>>, levels: &Vec<u64>) -> OffsetArr
 
     let mut current_offset = 0u64;
 
-    nodes.push(Node::new(0, levels[0]));
+    nodes.push(Node::new(0));
 
     for (i, edges) in adj_list.iter().enumerate() {
         current_offset += edges.len() as u64;        
         flat_edges.extend(edges.clone());
-
-        let level = if i + 1 < levels.len() {
-            levels[i + 1]
-        } else {
-            levels[i] // letzter kann irgendwas sein
-        };
-
-        nodes.push(Node::new(current_offset, level));
+        nodes.push(Node::new(current_offset));
     }
 
     (flat_edges, nodes)

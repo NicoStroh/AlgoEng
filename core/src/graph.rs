@@ -6,6 +6,8 @@ use std::collections::BinaryHeap;
 pub struct Graph {
     pub num_nodes: usize,
 
+    pub levels: Vec<u64>,
+
     // Graph representation of outgoing edges
     pub outgoing_nodes: Vec<Node>,
     pub outgoing_edges: Vec<Edge>,
@@ -31,19 +33,19 @@ impl Edge {
 
 #[derive(Debug, Clone)]
  pub struct Node {
-    offset: u64,
-    level: u64
+    offset: u64
  }
 
  impl Node {
-    pub fn new(offset: u64, level: u64) -> Self {
-        Node {offset, level}
+    pub fn new(offset: u64) -> Self {
+        Node {offset}
     }
  }
 
 impl Graph {
     pub fn new(
         num_nodes: usize,
+        levels: Vec<u64>,
         outgoing: (Vec<Edge>, Vec<Node>),
         incoming: (Vec<Edge>, Vec<Node>),
     ) -> Self {
@@ -52,6 +54,7 @@ impl Graph {
 
         Self {
             num_nodes,
+            levels,
             outgoing_nodes,
             outgoing_edges,
             incoming_nodes,
@@ -134,8 +137,7 @@ impl Graph {
 
             // ---- Forward search ----
             if let Some((Reverse(d), u)) = heap_f.pop() {
-                if d > dist_f[u] { continue; }
-                if d > best { break; }
+                if d > dist_f[u] || d > best { continue; }
 
                 visited_f[u] = true;
 
@@ -143,13 +145,13 @@ impl Graph {
                     best = best.min(dist_f[u] + dist_b[u]);
                 }
 
-                let level_u = self.outgoing_nodes[u].level;
+                let level_u = self.levels[u];
 
                 for edge in self.outgoing(u) {
                     let v = edge.target as usize;
 
                     // CH constraint: only go UP
-                    if self.outgoing_nodes[v].level <= level_u {
+                    if self.levels[v] <= level_u {
                         continue;
                     }
 
@@ -164,8 +166,7 @@ impl Graph {
 
             // ---- Backward search ----
             if let Some((Reverse(d), u)) = heap_b.pop() {
-                if d > dist_b[u] { continue; }
-                if d > best { break; }
+                if d > dist_b[u] || d > best { continue; }
 
                 visited_b[u] = true;
 
@@ -173,13 +174,13 @@ impl Graph {
                     best = best.min(dist_f[u] + dist_b[u]);
                 }
 
-                let level_u = self.incoming_nodes[u].level;
+                let level_u = self.levels[u];
 
                 for edge in self.incoming(u) {
                     let v = edge.target as usize;
 
                     // CH constraint: only go UP
-                    if self.incoming_nodes[v].level <= level_u {
+                    if self.levels[v] <= level_u {
                         continue;
                     }
 

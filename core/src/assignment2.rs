@@ -60,6 +60,7 @@ fn run_ch_query(graph: &Graph) {
 
     println!("Dijkstra runtime: {:?}", duration_dijkstra);
 
+    // Ensure the 2 computed distances are equal
     assert_eq!(distance_ch.unwrap(), distance_dijsktra);
 }
 
