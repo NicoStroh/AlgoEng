@@ -2,8 +2,8 @@ use std::time::Instant;
 
 mod parser;
 mod graph;
-mod assignment1;
+mod assignment2;
 
 fn main() {
-    assignment1::run_problems();
+    assignment2::run_problems();
 }
