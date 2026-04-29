@@ -1,5 +1,3 @@
-use std::cmp::Reverse;
-use std::collections::BinaryHeap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::sync::OnceLock;
@@ -38,7 +36,7 @@ pub struct Edge {
     pub edge_id_a: Option<u64>,
     pub edge_id_b: Option<u64>,
 
-    id: i32,
+    pub id: i32,
     dir: bool,
 }
 
@@ -175,6 +173,10 @@ impl Graph {
 
     pub fn node_at(&self, index: usize) -> &Node {
         &self.nodes[index]
+    }
+
+    pub fn node_at_mut(&mut self, index: usize) -> &mut Node {
+        &mut self.nodes[index]
     }
 
     pub fn outgoing_edges(&self, node: usize) -> impl Iterator<Item = &Edge> {

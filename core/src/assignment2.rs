@@ -19,8 +19,8 @@ pub fn run_problems() {
 fn run_problem_1() -> Graph {
     println!("Running problem 1: Reading precomputed Stuttgart graph file and run CH");
 
-    let graph = read_precomputed_stuttgart_graph();
-    run_ch_query(&graph);
+    let mut graph = read_precomputed_stuttgart_graph();
+    run_ch_query(&mut graph);
 
     return graph;
 }
@@ -38,7 +38,7 @@ fn read_precomputed_stuttgart_graph() -> Graph {
     return graph;
 }
 
-fn run_ch_query(graph: &Graph) {
+fn run_ch_query(graph: &mut Graph) {
     println!("Running CH query on stuttgart graph");
 
     // Generate random source and target nodes
@@ -74,9 +74,9 @@ fn run_ch_query(graph: &Graph) {
 
 fn run_problem_2() {
     println!("Running problem 2: CH Preprocessing");
-    let graph = read_germany_graph();
+    let mut graph = read_germany_graph();
     preprocess_graph(&graph);
-    run_ch_query(&graph);
+    run_ch_query(&mut graph);
 }
 
 fn read_germany_graph() -> Graph {
