@@ -122,8 +122,8 @@ impl Graph {
             let target: usize = parts[1].parse().unwrap();
             let weight: u64 = parts[2].parse().unwrap();
 
-            let edge_id_a: Option<u64> = parts[5].parse().ok();
-            let edge_id_b: Option<u64> = parts[6].parse().ok();
+            let edge_id_a: Option<u64> = parts.get(5).and_then(|s| s.parse().ok());
+            let edge_id_b: Option<u64> = parts.get(6).and_then(|s| s.parse().ok());
 
             let edge: Edge = Edge::new(target as u64, weight, edge_id_a, edge_id_b);
             let reverse_edge = edge.reverse(source as u64);
