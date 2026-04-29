@@ -23,11 +23,57 @@ pub fn parse_graph(path: &str) -> Graph {
     let num_edges: usize = lines[1].parse().unwrap();
 
     // =========================
+    // 1. LEVELS (alle 0)
+    // =========================
+    let levels: Vec<u64> = vec![0; num_nodes];
+
+    // =========================
+    // 2. EDGE LISTEN
+    // =========================
+    let mut outgoing_edges: Vec<Vec<Edge>> = vec![Vec::new(); num_nodes];
+    let mut incoming_edges: Vec<Vec<Edge>> = vec![Vec::new(); num_nodes];
+
+    let edge_start = 2 + num_nodes;
+
+    for i in 0..num_edges {
+        let line = &lines[edge_start + i];
+        let parts: Vec<&str> = line.split_whitespace().collect();
+
+        let source: usize = parts[0].parse().unwrap();
+        let target: usize = parts[1].parse().unwrap();
+        let weight: u64 = parts[2].parse().unwrap();
+
+        outgoing_edges[source].push(Edge::new(target as u64, weight, None, None));
+        incoming_edges[target].push(Edge::new(source as u64, weight, None, None));
+    }
+
+    // =========================
+    // 3. OFFSET ARRAY BAUEN
+    // =========================
+    let outgoing = create_offset_array(outgoing_edges);
+    let incoming = create_offset_array(incoming_edges);
+
+    Graph::new(
+        num_nodes,
+        levels,
+        outgoing,
+        incoming
+    )
+}
+
+pub fn parse_preprocessed_graph(path: &str) -> Graph {
+    let lines = read_lines(path);
+
+    let num_nodes: usize = lines[0].parse().unwrap();
+    let num_edges: usize = lines[1].parse().unwrap();
+
+    // =========================
     // 1. LEVELS EINLESEN
     // =========================
     let mut levels: Vec<u64> = vec![];
 
     for i in 0..num_nodes {
+        // First two lines are skipped, they are just num_nodes and num_edges
         let line = &lines[i + 2];
         let parts: Vec<&str> = line.split_whitespace().collect();
 

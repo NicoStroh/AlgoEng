@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use crate::graph::{Graph};
-use crate::parser::parse_graph;
+use crate::parser::{parse_graph, parse_preprocessed_graph};
 
 use rand::Rng;
 use rand::thread_rng;
@@ -30,7 +30,7 @@ fn read_precomputed_stuttgart_graph() -> Graph {
     let start = Instant::now();
 
     let path = "core/data/graphs/stgtregbz_ch.fmi";
-    let graph = parse_graph(path);
+    let graph = parse_preprocessed_graph(path);
 
     let duration = start.elapsed();
 
@@ -73,13 +73,27 @@ fn run_ch_query(graph: &Graph) {
 }
 
 fn run_problem_2() {
+
     println!("Running problem 2: CH Preprocessing");
+    let graph = read_germany_graph();
+    preprocess_graph(&graph);
+    run_ch_query(&graph);
+
+}
+
+fn read_germany_graph() -> Graph {
 
     let start = Instant::now();
-
-    // TODO
-
+    let path = "core/data/graphs/germany.fmi";
+    let graph = parse_graph(path);
     let duration = start.elapsed();
 
-    println!("Problem 2 time: {:?}", duration);
+    println!("Reading germany graph took {:?}", duration);
+
+    return graph;
+
+}
+
+fn preprocess_graph(graph: &Graph) {
+
 }
