@@ -75,7 +75,7 @@ fn run_ch_query(graph: &mut Graph) {
 fn run_problem_2() {
     println!("Running problem 2: CH Preprocessing");
     let mut graph = read_germany_graph();
-    preprocess_graph(&graph);
+    preprocess_graph(&mut graph);
     run_ch_query(&mut graph);
 }
 
@@ -90,10 +90,13 @@ fn read_germany_graph() -> Graph {
     return graph;
 }
 
-fn preprocess_graph(graph: &Graph) {
+fn preprocess_graph(graph: &mut Graph) -> CH {
     let start = Instant::now();
-    // TODO
+    let mut ch = CH::new(graph);
+    ch.ch_preprocess();
     let duration = start.elapsed();
 
     println!("Preprocessing germany graph took {:?}", duration);
+
+    return ch;
 }
