@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::graph::Graph;
 use crate::parser::{parse_graph, parse_preprocessed_graph};
-use crate::working_graph::WorkingGraph;
+use crate::working_graph::{CHBuilder, WorkingGraph};
 
 use rand::Rng;
 use rand::thread_rng;
@@ -88,4 +88,13 @@ fn read_germany_graph() -> Graph {
     return graph;
 }
 
-fn preprocess_graph(graph: &Graph) -> WorkingGraph {}
+fn preprocess_graph(graph: &Graph) -> WorkingGraph {
+    let start = Instant::now();
+    let mut ch_builder = CHBuilder::from_graph(graph);
+    ch_builder.run();
+    let duration = start.elapsed();
+
+    println!("Preprocessing germany graph took {:?}", duration);
+
+    return ch_builder.g;
+}
