@@ -56,7 +56,7 @@ fn run_ch_query(graph: &Graph) {
 
     // Execute CH with stall-on-demand and print runtime
     let start_ch_sod = Instant::now();
-    let distance_ch_sod = ch.ch_query(source, target);
+    let distance_ch_sod = ch.ch_query(source, target).unwrap();
     let duration_ch_sod = start_ch_sod.elapsed();
     println!("CH with stall-on-demand runtime: {:?}", duration_ch_sod);
 
