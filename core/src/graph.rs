@@ -1,4 +1,3 @@
-
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
@@ -21,26 +20,32 @@ pub struct Graph {
 pub struct Edge {
     pub target: u64,
     pub weight: u64,
-    edge_id_a: Option<u64>,
-    edge_id_b: Option<u64>
+
+    pub edge_id_a: Option<u64>,
+    pub edge_id_b: Option<u64>,
 }
 
 impl Edge {
     pub fn new(target: u64, weight: u64, edge_id_a: Option<u64>, edge_id_b: Option<u64>) -> Self {
-        Edge {target, weight, edge_id_a, edge_id_b}
+        Edge {
+            target,
+            weight,
+            edge_id_a,
+            edge_id_b,
+        }
     }
 }
 
 #[derive(Debug, Clone)]
- pub struct Node {
-    offset: u64
- }
+pub struct Node {
+    offset: u64,
+}
 
- impl Node {
+impl Node {
     pub fn new(offset: u64) -> Self {
-        Node {offset}
+        Node { offset }
     }
- }
+}
 
 impl Graph {
     pub fn new(
@@ -134,10 +139,11 @@ impl Graph {
         let mut best = usize::MAX;
 
         while !heap_f.is_empty() || !heap_b.is_empty() {
-
             // ---- Forward search ----
             if let Some((Reverse(d), u)) = heap_f.pop() {
-                if d > dist_f[u] || d > best { continue; }
+                if d > dist_f[u] || d > best {
+                    continue;
+                }
 
                 visited_f[u] = true;
 
@@ -166,7 +172,9 @@ impl Graph {
 
             // ---- Backward search ----
             if let Some((Reverse(d), u)) = heap_b.pop() {
-                if d > dist_b[u] || d > best { continue; }
+                if d > dist_b[u] || d > best {
+                    continue;
+                }
 
                 visited_b[u] = true;
 
@@ -194,11 +202,7 @@ impl Graph {
             }
         }
 
-        if best == usize::MAX {
-            None
-        } else {
-            Some(best)
-        }
+        if best == usize::MAX { None } else { Some(best) }
     }
 
     pub fn ch_query_with_sod(&self, source: usize, target: usize) -> Option<usize> {
@@ -223,7 +227,6 @@ impl Graph {
         let mut best = usize::MAX;
 
         while !heap_f.is_empty() || !heap_b.is_empty() {
-
             // =========================
             // FORWARD SEARCH
             // =========================
@@ -243,11 +246,11 @@ impl Graph {
                     }
 
                     if let Some(vd) = dist_f[v].checked_add(w) {
-                    if vd < dist_f[u] {
-                        stalled = true;
-                        break;
+                        if vd < dist_f[u] {
+                            stalled = true;
+                            break;
+                        }
                     }
-                }
                 }
                 if stalled {
                     continue;
@@ -297,11 +300,11 @@ impl Graph {
                     }
 
                     if let Some(vd) = dist_b[v].checked_add(w) {
-                    if vd < dist_b[u] {
-                        stalled = true;
-                        break;
+                        if vd < dist_b[u] {
+                            stalled = true;
+                            break;
+                        }
                     }
-                }
                 }
                 if stalled {
                     continue;
@@ -333,11 +336,6 @@ impl Graph {
             }
         }
 
-        if best == usize::MAX {
-            None
-        } else {
-            Some(best)
-        }
+        if best == usize::MAX { None } else { Some(best) }
     }
-
 }
