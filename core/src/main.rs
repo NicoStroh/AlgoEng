@@ -1,4 +1,5 @@
 mod assignment2;
+mod ch;
 mod dijkstra;
 mod graph;
 

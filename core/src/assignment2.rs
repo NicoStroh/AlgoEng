@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+use crate::ch::CH;
 use crate::dijkstra::Dijkstra;
 use crate::graph::Graph;
 
@@ -48,13 +49,14 @@ fn run_ch_query(graph: &Graph) {
 
     // Execute CH and print runtime
     let start_ch = Instant::now();
-    let distance_ch = graph.ch_query(source, target);
+    let mut ch = CH::new(graph);
+    let distance_ch = ch.ch_query_without_sod(source, target).unwrap();
     let duration_ch = start_ch.elapsed();
     println!("CH runtime: {:?}", duration_ch);
 
     // Execute CH with stall-on-demand and print runtime
     let start_ch_sod = Instant::now();
-    let distance_ch_sod = graph.ch_query_with_sod(source, target);
+    let distance_ch_sod = ch.ch_query(source, target);
     let duration_ch_sod = start_ch_sod.elapsed();
     println!("CH with stall-on-demand runtime: {:?}", duration_ch_sod);
 
@@ -66,8 +68,8 @@ fn run_ch_query(graph: &Graph) {
     println!("Dijkstra runtime: {:?}", duration_dijkstra);
 
     // Ensure the computed distances are equal
-    assert_eq!(distance_ch.unwrap(), distance_ch_sod.unwrap());
-    assert_eq!(distance_ch.unwrap(), distance_dijsktra);
+    assert_eq!(distance_ch, distance_ch_sod);
+    assert_eq!(distance_ch, distance_dijsktra);
 }
 
 fn run_problem_2() {
