@@ -1,20 +1,34 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::sync::OnceLock;
+use std::sync::atomic::{AtomicI32, Ordering};
 
 #[derive(Debug)]
-pub struct Graph {
-    pub num_nodes: usize,
-
-    pub levels: Vec<u64>,
-
-    // Graph representation of outgoing edges
-    pub outgoing_nodes: Vec<Node>,
-    pub outgoing_edges: Vec<Edge>,
-
-    // Incoming edges
-    pub incoming_nodes: Vec<Node>,
-    pub incoming_edges: Vec<Edge>,
+pub struct Node {
+    osm_id: u64,
+    lat: f32,
+    lon: f32,
+    pub level: u16,
 }
+
+impl Node {
+    pub fn new(osm_id: u64, lat: f32, lon: f32, level: u16) -> Self {
+        Node {
+            osm_id,
+            lat,
+            lon,
+            level,
+        }
+    }
+
+    pub fn set_level(&mut self, level: u16) {
+        self.level = level
+    }
+}
+
+static EDGE_COUNTER: OnceLock<AtomicI32> = OnceLock::new();
 
 #[derive(Debug, Clone, Copy)]
 pub struct Edge {
@@ -23,102 +37,156 @@ pub struct Edge {
 
     pub edge_id_a: Option<u64>,
     pub edge_id_b: Option<u64>,
+
+    id: i32,
+    dir: bool,
 }
 
 impl Edge {
     pub fn new(target: u64, weight: u64, edge_id_a: Option<u64>, edge_id_b: Option<u64>) -> Self {
+        let counter = EDGE_COUNTER.get_or_init(|| AtomicI32::new(0));
+        counter.fetch_add(1, Ordering::Relaxed);
+
         Edge {
             target,
             weight,
             edge_id_a,
             edge_id_b,
+            id: Self::get_creation_count(),
+            dir: true,
         }
     }
-}
 
-#[derive(Debug, Clone)]
-pub struct Node {
-    offset: u64,
-}
-
-impl Node {
-    pub fn new(offset: u64) -> Self {
-        Node { offset }
+    fn get_creation_count() -> i32 {
+        EDGE_COUNTER
+            .get()
+            .map(|c| c.load(Ordering::Relaxed))
+            .unwrap_or(0)
     }
+
+    pub fn reverse(&self, source: u64) -> Self {
+        let mut edge = self.clone();
+        edge.dir = false;
+        edge.target = source;
+        return edge;
+    }
+}
+
+#[derive(Debug)]
+pub struct Graph {
+    pub nodes: Vec<Node>,
+    pub edges: Vec<Vec<Edge>>,
 }
 
 impl Graph {
-    pub fn new(
-        num_nodes: usize,
-        levels: Vec<u64>,
-        outgoing: (Vec<Edge>, Vec<Node>),
-        incoming: (Vec<Edge>, Vec<Node>),
-    ) -> Self {
-        let (outgoing_edges, outgoing_nodes) = outgoing;
-        let (incoming_edges, incoming_nodes) = incoming;
+    pub fn new(nodes: Vec<Node>, edges: Vec<Vec<Edge>>) -> Self {
+        Graph { nodes, edges }
+    }
 
-        Self {
-            num_nodes,
-            levels,
-            outgoing_nodes,
-            outgoing_edges,
-            incoming_nodes,
-            incoming_edges,
+    pub fn from_file(path: &str) -> Self {
+        let file = File::open(path).expect("File not found");
+        let reader = BufReader::new(file);
+
+        let lines: Vec<String> = reader
+            .lines()
+            .map(|l| l.unwrap())
+            .filter(|line| !line.is_empty() && !line.starts_with('#'))
+            .collect();
+
+        let num_nodes: usize = lines[0].parse().unwrap();
+        let num_edges: usize = lines[1].parse().unwrap();
+
+        let mut nodes: Vec<Node> = Vec::with_capacity(num_nodes);
+        for i in 0..num_nodes {
+            let line = &lines[i + 2];
+            let parts: Vec<&str> = line.split_whitespace().collect();
+
+            let osm_id: u64 = parts[0].parse().unwrap();
+            let lat: f32 = parts[1].parse().unwrap();
+            let lon: f32 = parts[2].parse().unwrap();
+            let mut level = 0;
+
+            // This is an already CH precomputed graph file
+            if parts.len() >= 6 {
+                level = parts[5].parse().unwrap();
+            }
+
+            nodes.push(Node::new(osm_id, lat, lon, level));
+        }
+
+        let mut edges: Vec<Vec<Edge>> = vec![Vec::new(); num_nodes];
+        let edge_start = 2 + num_nodes;
+        for i in 0..num_edges {
+            let line = &lines[edge_start + i];
+            let parts: Vec<&str> = line.split_whitespace().collect();
+
+            let source: usize = parts[0].parse().unwrap();
+            let target: usize = parts[1].parse().unwrap();
+            let weight: u64 = parts[2].parse().unwrap();
+
+            let edge_id_a: Option<u64> = parts[5].parse().ok();
+            let edge_id_b: Option<u64> = parts[6].parse().ok();
+
+            let edge: Edge = Edge::new(target as u64, weight, edge_id_a, edge_id_b);
+            let reverse_edge = edge.reverse(source as u64);
+            edges[source].push(edge);
+            edges[target].push(reverse_edge);
+        }
+
+        return Graph { nodes, edges };
+    }
+
+    pub fn num_nodes(&self) -> usize {
+        self.nodes.len()
+    }
+
+    pub fn num_edges(&self) -> usize {
+        self.edges
+            .iter()
+            .map(|edge| edge.iter().filter(|&edge| edge.dir).count())
+            .sum()
+    }
+
+    pub fn add_edge(&mut self, source: usize, edge: Edge) {
+        let reverse_edge = edge.reverse(source as u64);
+
+        if let Some(e) = self.edges[source as usize]
+            .iter_mut()
+            .find(|e| e.target == edge.target && e.dir == edge.dir)
+        {
+            if e.weight > edge.weight {
+                e.weight = edge.weight;
+            }
+        } else {
+            self.edges[source as usize].push(edge);
+        }
+
+        if let Some(e) = self.edges[edge.target as usize]
+            .iter_mut()
+            .find(|e| e.target == reverse_edge.target && e.dir == reverse_edge.dir)
+        {
+            if e.weight > reverse_edge.weight {
+                e.weight = reverse_edge.weight;
+            }
+        } else {
+            self.edges[edge.target as usize].push(reverse_edge);
         }
     }
 
-    pub fn outgoing(&self, node: usize) -> &[Edge] {
-        let start = self.outgoing_nodes[node].offset as usize;
-        let end = self.outgoing_nodes[node + 1].offset as usize;
-        &&self.outgoing_edges[start..end]
+    pub fn node_at(&self, index: usize) -> &Node {
+        &self.nodes[index]
     }
 
-    pub fn incoming(&self, node: usize) -> &[Edge] {
-        let start = self.incoming_nodes[node].offset as usize;
-        let end = self.incoming_nodes[node + 1].offset as usize;
-        &&self.incoming_edges[start..end]
+    pub fn outgoing_edges(&self, node: usize) -> impl Iterator<Item = &Edge> {
+        self.edges[node].iter().filter(|e| e.dir)
     }
 
-    // Only computes the difference between source and target node
-    pub fn dijkstra_distance(&self, source: usize, target: usize) -> usize {
-        let n = self.num_nodes;
-
-        let mut dist = vec![usize::MAX; n];
-        let mut prev = vec![None; n];
-
-        let mut heap = BinaryHeap::new();
-
-        dist[source] = 0;
-        heap.push((Reverse(0), source));
-
-        while let Some((Reverse(d), u)) = heap.pop() {
-            if u == target {
-                break;
-            }
-
-            if d > dist[u] {
-                continue;
-            }
-
-            for edge in self.outgoing(u) {
-                let v = edge.target as usize;
-                let w = edge.weight as usize;
-
-                let new_dist = d + w;
-
-                if new_dist < dist[v] {
-                    dist[v] = new_dist;
-                    prev[v] = Some(u);
-                    heap.push((Reverse(new_dist), v));
-                }
-            }
-        }
-
-        return dist[target];
+    pub fn incoming_edges(&self, node: usize) -> impl Iterator<Item = &Edge> {
+        self.edges[node].iter().filter(|e| !e.dir)
     }
 
     pub fn ch_query(&self, source: usize, target: usize) -> Option<usize> {
-        let n = self.num_nodes;
+        let n = self.num_nodes();
 
         // Distances for forwards and backwards search
         let mut dist_f = vec![usize::MAX; n];
@@ -151,13 +219,13 @@ impl Graph {
                     best = best.min(dist_f[u] + dist_b[u]);
                 }
 
-                let level_u = self.levels[u];
+                let level_u = self.node_at(u).level;
 
-                for edge in self.outgoing(u) {
+                for edge in self.outgoing_edges(u) {
                     let v = edge.target as usize;
 
                     // CH constraint: only go UP
-                    if self.levels[v] <= level_u {
+                    if self.node_at(v).level <= level_u {
                         continue;
                     }
 
@@ -182,13 +250,13 @@ impl Graph {
                     best = best.min(dist_f[u] + dist_b[u]);
                 }
 
-                let level_u = self.levels[u];
+                let level_u = self.node_at(u).level;
 
-                for edge in self.incoming(u) {
+                for edge in self.incoming_edges(u) {
                     let v = edge.target as usize;
 
                     // CH constraint: only go UP
-                    if self.levels[v] <= level_u {
+                    if self.node_at(v).level <= level_u {
                         continue;
                     }
 
@@ -206,7 +274,7 @@ impl Graph {
     }
 
     pub fn ch_query_with_sod(&self, source: usize, target: usize) -> Option<usize> {
-        let n = self.num_nodes;
+        let n = self.num_nodes();
 
         // Distances for forwards and backwards search
         let mut dist_f = vec![usize::MAX; n];
@@ -237,11 +305,11 @@ impl Graph {
 
                 // ---- Stall-on-Demand ----
                 let mut stalled = false;
-                for edge in self.incoming(u) {
+                for edge in self.incoming_edges(u) {
                     let v = edge.target as usize;
                     let w = edge.weight as usize;
 
-                    if self.levels[v] <= self.levels[u] {
+                    if self.node_at(v).level <= self.node_at(u).level {
                         continue;
                     }
 
@@ -262,13 +330,13 @@ impl Graph {
                     best = best.min(dist_f[u] + dist_b[u]);
                 }
 
-                let level_u = self.levels[u];
+                let level_u = self.node_at(u).level;
 
-                for edge in self.outgoing(u) {
+                for edge in self.outgoing_edges(u) {
                     let v = edge.target as usize;
 
                     // CH constraint: only upward edges
-                    if self.levels[v] <= level_u {
+                    if self.node_at(v).level <= level_u {
                         continue;
                     }
 
@@ -291,11 +359,11 @@ impl Graph {
 
                 // ---- Stall-on-Demand ----
                 let mut stalled = false;
-                for edge in self.outgoing(u) {
+                for edge in self.outgoing_edges(u) {
                     let v = edge.target as usize;
                     let w = edge.weight as usize;
 
-                    if self.levels[v] <= self.levels[u] {
+                    if self.node_at(v).level <= self.node_at(u).level {
                         continue;
                     }
 
@@ -316,13 +384,13 @@ impl Graph {
                     best = best.min(dist_f[u] + dist_b[u]);
                 }
 
-                let level_u = self.levels[u];
+                let level_u = self.node_at(u).level;
 
-                for edge in self.incoming(u) {
+                for edge in self.incoming_edges(u) {
                     let v = edge.target as usize;
 
                     // CH constraint: only upward edges
-                    if self.levels[v] <= level_u {
+                    if self.node_at(v).level <= level_u {
                         continue;
                     }
 
