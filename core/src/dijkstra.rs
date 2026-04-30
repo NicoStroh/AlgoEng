@@ -60,7 +60,7 @@ impl<'a> Dijkstra<'a> {
         if let Some(old_start) = self.old_start {
             if old_start == s {
                 reset = false;
-                if !self.optimized.get(t) {
+                if self.optimized.get(t) {
                     return self.weights[t as usize];
                 }
             }
@@ -122,6 +122,7 @@ impl<'a> Dijkstra<'a> {
         return dist[target];
     }
 
+    // Normal dijkstra was way too slow so this monstrosity had to be created
     pub fn shortest_path_consider_contraction(
         &mut self,
         source: usize,
@@ -133,7 +134,7 @@ impl<'a> Dijkstra<'a> {
         }
 
         while let Some(Distance { weight, id }) = self.heap.pop() {
-            if !self.optimized.get(id) {
+            if self.optimized.get(id) {
                 continue;
             }
             self.optimized.set(id, true);
@@ -151,6 +152,10 @@ impl<'a> Dijkstra<'a> {
                     self.heap.push(Distance::new(weight + w, v));
                     self.visited.push(v);
                 }
+            }
+
+            if id == target {
+                return Some(weight);
             }
         }
 

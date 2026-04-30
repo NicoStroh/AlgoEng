@@ -100,7 +100,7 @@ impl<'a> CH<'a> {
                     outgoing_edge.target as usize,
                     contracted,
                 );
-                if shortest_distance >= direct_distance as usize {
+                if shortest_distance >= Some(direct_distance as usize) {
                     shortcuts.push(Shortcut::new(
                         incoming_edge.target,
                         outgoing_edge.target,
@@ -456,7 +456,7 @@ pub struct BitSet {
 }
 
 impl BitSet {
-    fn new(size: usize) -> Self {
+    pub fn new(size: usize) -> Self {
         Self {
             data: vec![0; size.div_ceil(64)],
         }
@@ -476,7 +476,7 @@ impl BitSet {
         }
     }
 
-    fn clear(&mut self, idx: usize) {
+    pub fn clear(&mut self, idx: usize) {
         self.data[idx / 64] &= !(1 << (idx % 64));
     }
 }
