@@ -1,5 +1,5 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, Write};
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicI32, Ordering};
 
@@ -132,6 +132,53 @@ impl Graph {
         }
 
         return Graph { nodes, edges };
+    }
+
+    pub fn export_graph(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)?;
+
+        // Comment header
+        for _ in 0..9 {
+            writeln!(file, "# ")?;
+        }
+        // One empty line
+        writeln!(file, "# ")?;
+
+        // Number of nodes and edges
+        writeln!(file, "{}", self.num_nodes())?;
+        writeln!(file, "{}", self.num_edges())?;
+
+        // Export nodes
+        for (i, node) in self.nodes.iter().enumerate() {
+            // <ID> <OSMID> <Lat> <Lon> <Height> <Level>
+            writeln!(
+                file,
+                "{} {} {} {} 0 {}",
+                i, node.osm_id, node.lat, node.lon, node.level
+            )?;
+        }
+
+        // Export edges
+        for (node, edges) in self.edges.iter().enumerate() {
+            for edge in edges {
+                if !edge.dir {
+                    continue;
+                }
+
+                // <SrcID> <TrgID> <Weight> <Type> <MaxSpeed> <EdgeIdA> <EdgeIdB>
+                writeln!(
+                    file,
+                    "{} {} {} 0 0 {:?} {:?}",
+                    node, edge.target, edge.weight, edge.edge_id_a, edge.edge_id_b
+                )?;
+            }
+        }
+
+        Ok(())
     }
 
     pub fn num_nodes(&self) -> usize {

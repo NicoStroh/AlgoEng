@@ -27,7 +27,7 @@ impl Shortcut {
 }
 
 pub struct CH<'a> {
-    graph: &'a mut Graph,
+    pub graph: &'a mut Graph,
 
     dist_forward: Vec<Option<usize>>,
     dist_backward: Vec<Option<usize>>,
